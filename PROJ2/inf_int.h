@@ -31,20 +31,22 @@ public:
     friend bool operator<(const inf_int&, const inf_int&);
 
     friend inf_int operator+(const inf_int&, const inf_int&);
-    friend inf_int operator-(const inf_int&, const inf_int&); // 재호형
+    friend inf_int operator-(const inf_int&, const inf_int&);
     friend inf_int operator*(const inf_int&, const inf_int&);
-    friend inf_int operator/(const inf_int& , const inf_int&); // 재호형
+    friend inf_int operator/(const inf_int& , const inf_int&);
 
     friend ostream& operator<<(ostream&, const inf_int&);
     // friend istream& operator>>(istream& , inf_int&);    // not required
-
-    void Add(const char num, const unsigned int index);
 
 private:
     // 간단한 빼기 연산입니다.
     inf_int simple_subtract(const inf_int&) const;
     //  두개의 절댓값을 뺍니다.
     inf_int karatsuba_subtract(const inf_int&) const;
+
+    inf_int simple_multiply(const inf_int&) const;
+
+    inf_int karatsuba_multiply(const inf_int&) const;
 };
 
 #endif
