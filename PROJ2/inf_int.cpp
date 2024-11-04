@@ -177,45 +177,18 @@ inf_int operator+(const inf_int& a, const inf_int& b)
 
 inf_int operator-(const inf_int& a, const inf_int& b)
 {
-	bool has_same_sign = a.thesign == b.thesign;
-
-	//연산을 위한 부호없는 값 생성
-	inf_int subtrahend = b.digits; // 빼질 값
-	inf_int minuend = a.digits; // 뺄 값
-	bool thesign = false;
-	string digits;
-
-	if (has_same_sign)
-	{
-		// (+)-(+) or (-)-(-)인 경우 계산
-
-		if (subtrahend==minuend) return inf_int(0); // 절댓값이 같을 경우 결과가 0
-		
-		thesign = a.thesign;
-
-		// 뺄값이 뺴는값 보다 클때, minuend와 subtrahend 바꿈
-		if (subtrahend<minuend)
-		{
-			thesign = !a.thesign;
-			subtrahend = a.digits;
-			minuend = b.digits;
-		}
-
-		bool carry = false;
-		int s_length = subtrahend.digits.length();
-		int m_length = minuend.digits.length();
-		int s_digit, m_digit, temp;
-		for (int i = 0; i < s_length; i++)
-		{
-			s_digit = subtrahend.digits.at(i)-'0';
-			if (carry) s_digit -= 1;
-
-			if (i < m_length)
-			{
-				m_digit = minuend.digits.at(i)-'0';
-				temp = s_digit-m_digit;
-			}
-			else temp = s_digit;
+    inf_int result;
+    if (a < b)
+    {
+        result = b.karatsuba_subtract(a);
+        result.thesign = false;
+    }
+    else
+    {
+        result = a.karatsuba_subtract(b);
+        result.thesign = true;
+    }
+    return result;
 }
 
 inf_int inf_int::karatsuba_subtract(const inf_int& other) const
