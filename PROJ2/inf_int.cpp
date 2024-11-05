@@ -71,15 +71,20 @@ inf_int& inf_int::operator=(const inf_int& a)
 
 bool operator==(const inf_int& a, const inf_int& b)
 {
-	if (a.thesign == b.thesign && a.digits.length() == b.digits.length()) {
-		for (int i = 0; i < a.digits.length(); i++) {
-			if (a.digits[i] != b.digits[i]) {
-				return false;
-			}
+	// 부호와 자릿수가 같지 않으면 바로 false를 반환
+	if (a.thesign != b.thesign || a.digits.length() != b.digits.length()) {
+		return false;
+	}
+
+	// 모든 자리수가 동일한지 확인
+	for (int i = 0; i < a.digits.length(); i++) {
+		if (a.digits[i] != b.digits[i]) {
+			return false;
 		}
 	}
-	return true;;
-} 
+
+	return true; // 모든 조건을 만족하면 true 반환
+}
 
 bool operator!=(const inf_int& a, const inf_int& b)
 {
@@ -127,7 +132,6 @@ bool operator<(const inf_int& a, const inf_int& b)
 
 inf_int operator+(const inf_int& a, const inf_int& b)
 {
-
 	if (a.thesign != b.thesign) {
 		return a - b;
 	}

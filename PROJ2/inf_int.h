@@ -38,6 +38,8 @@ public:
     friend ostream& operator<<(ostream&, const inf_int&);
     // friend istream& operator>>(istream& , inf_int&);    // not required
 
+    inf_int loop_multiply(const inf_int&) const;
+
 private:
     // 간단한 빼기 연산입니다.
     inf_int simple_subtract(const inf_int&) const;
