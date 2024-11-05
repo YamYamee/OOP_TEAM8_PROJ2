@@ -4,7 +4,66 @@
 #include <stdlib.h>
 
 using namespace std;
-W
+
+enum OperatorType {
+	MULTIPLY, DIVIDE, SUBTRACT, ADD, EQUAL, NOTEQUAL, LARGER, SMALLER
+};
+
+void test_operator(inf_int a1, inf_int a2, inf_int t, OperatorType type) 
+{
+	static int count = 0;
+	count++;
+	cout<<"("<<count<<") ";
+	bool is_success = false;
+	inf_int result;
+	switch (type)
+	{
+		case MULTIPLY:
+			cout<<"- Test "<<a1<<"*"<<a2;
+			result = a1*a2;
+			is_success = result == t;
+			break;
+		case DIVIDE:
+			cout<<"- Test "<<a1<<"/"<<a2;
+			result = a1/a2;
+			is_success = result == t;
+			break;
+		case ADD:
+			cout<<"- Test "<<a1<<"+"<<a2;
+			result = a1+a2;
+			is_success = result == t;
+			break;
+		case SUBTRACT:
+			result = a1-a2;
+			cout<<"- Test "<<a1<<"-"<<a2;
+			is_success = result == t;
+			break;
+		case EQUAL:
+			cout<<"- Test "<<a1<<"=="<<a2;
+			is_success = a1 == a2;
+			break;
+		case NOTEQUAL:
+			cout<<"- Test "<<a1<<"!="<<a2;
+			is_success = a1 != a2;
+			break;
+		case LARGER:
+			cout<<"- Test "<<a1<<">"<<a2;
+			is_success = a1 > a2;
+			break;
+		case SMALLER:
+			cout<<"- Test "<<a1<<"<"<<a2;
+			is_success = a1 < a2;
+			break;
+	}
+	if (is_success)
+		cout<<": ✅ Success"<<endl;
+	else {
+		cout<<": ❌ Fail ";
+		cout<<"(Result: "<<result;
+		cout<<")"<<endl;
+	}
+}
+
 int main()
 {
 	// 한자리수
