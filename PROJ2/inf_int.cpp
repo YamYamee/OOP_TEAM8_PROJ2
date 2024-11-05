@@ -76,15 +76,8 @@ inf_int& inf_int::operator=(const inf_int& a)
 
 bool operator==(const inf_int& a, const inf_int& b)
 {
-	if (a.thesign == b.thesign && a.digits.length() == b.digits.length()) {
-		for (int i = 0; i < a.digits.length(); i++) {
-			if (a.digits[i] != b.digits[i]) {
-				return false;
-			}
-		}
-	}
-	return true;;
-} 
+	return a.thesign == b.thesign && a.digits == b.digits;
+}
 
 bool operator!=(const inf_int& a, const inf_int& b)
 {
@@ -177,45 +170,26 @@ inf_int operator+(const inf_int& a, const inf_int& b)
 
 inf_int operator-(const inf_int& a, const inf_int& b)
 {
-	bool has_same_sign = a.thesign == b.thesign;
+	if (a==b) return inf_int(0); // 두 수가 같으면 0 반환
 
-	//연산을 위한 부호없는 값 생성
-	inf_int subtrahend = b.digits; // 빼질 값
-	inf_int minuend = a.digits; // 뺄 값
-	bool thesign = false;
-	string digits;
+	inf_int subtrahend = a, minuend = b;
+	subtrahend.thesign = true; minuend.thesign = true;
 
-	if (has_same_sign)
+	if (a.thesign != b.thesign) // 부호가 다르면 더하기
 	{
-		// (+)-(+) or (-)-(-)인 경우 계산
+		inf_int result = subtrahend + minuend;
+		result.thesign = a.thesign;
+		return result;
+	}
+	
+	if (subtrahend < minuend) // 작은값에서 큰값을 빼는 경우
+	{
+		inf_int result = minuend.karatsuba_subtract(subtrahend);
+		result.thesign = !a.thesign;
+		return result;
+	}
 
-		if (subtrahend==minuend) return inf_int(0); // 절댓값이 같을 경우 결과가 0
-		
-		thesign = a.thesign;
-
-		// 뺄값이 뺴는값 보다 클때, minuend와 subtrahend 바꿈
-		if (subtrahend<minuend)
-		{
-			thesign = !a.thesign;
-			subtrahend = a.digits;
-			minuend = b.digits;
-		}
-
-		bool carry = false;
-		int s_length = subtrahend.digits.length();
-		int m_length = minuend.digits.length();
-		int s_digit, m_digit, temp;
-		for (int i = 0; i < s_length; i++)
-		{
-			s_digit = subtrahend.digits.at(i)-'0';
-			if (carry) s_digit -= 1;
-
-			if (i < m_length)
-			{
-				m_digit = minuend.digits.at(i)-'0';
-				temp = s_digit-m_digit;
-			}
-			else temp = s_digit;
+    return subtrahend.karatsuba_subtract(minuend);
 }
 
 inf_int inf_int::karatsuba_subtract(const inf_int& other) const
@@ -223,46 +197,47 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     if (digits.length() <= 1 || other.digits.length() <= 1) return simple_subtract(other);
 
     int max_len = std::max(digits.length(), other.digits.length());
-    std::string subtrahend_digits = this->digits; // 빼질 값
-    subtrahend_digits.insert(0, max_len - subtrahend_digits.length(), '0'); // 자릿수 맞추기
-    std::string minuend_digits = other.digits; // 뺄 값
-    minuend_digits.insert(0, max_len - minuend_digits.length(), '0'); // 자릿수 맞추기
+    std::string subtrahend_digits = this->digits;
+    subtrahend_digits.insert(subtrahend_digits.end(), max_len - subtrahend_digits.length(), '0'); // 앞에 0 추가
+    std::string minuend_digits = other.digits;
+    minuend_digits.insert(minuend_digits.end(), max_len - minuend_digits.length(), '0'); // 앞에 0 추가
 
     int split_pos = max_len / 2;
-    inf_int s_left(subtrahend_digits.substr(0, split_pos));
-    inf_int s_right(subtrahend_digits.substr(split_pos));
-    inf_int m_left(minuend_digits.substr(0, split_pos));
-    inf_int m_right(minuend_digits.substr(split_pos));
+    inf_int s_left, s_right, m_left, m_right;
+    s_left.digits = subtrahend_digits.substr(0, split_pos);
+    s_right.digits = subtrahend_digits.substr(split_pos);
+    m_left.digits = minuend_digits.substr(0, split_pos);
+    m_right.digits = minuend_digits.substr(split_pos);
 
     inf_int left_result = s_left.karatsuba_subtract(m_left);
+	if (!left_result.thesign)
+	{
+		s_right = s_right.karatsuba_subtract(inf_int(1)); // 부호 처리 문제
+		left_result.thesign = true;
+	}
     inf_int right_result = s_right.karatsuba_subtract(m_right);
 
-    if (!right_result.thesign) // carry 발생시
-    {
-        left_result = left_result.karatsuba_subtract(inf_int(1));
-        right_result.thesign = true;
-    }
-
-    inf_int result;
-    result.digits = left_result.digits + std::string(max_len - split_pos, '0') + right_result.digits;
+	int left_padding = m_left.digits.length()-left_result.digits.length();
+	string result_digits = left_result.digits + string(left_padding, '0') + right_result.digits;
+	reverse(result_digits.begin(), result_digits.end());
+    inf_int result(result_digits);
+	result.thesign = s_right.thesign ? right_result.thesign: false; // 부호처리 
     return result;
 }
 
 inf_int inf_int::simple_subtract(const inf_int& other) const
 {
-    inf_int subtrahend = digits; // 빼질 값
-    inf_int minuend = other.digits; // 뺄 값
+	if (*this == other) return inf_int(0); // 동일한 숫자이면 0반환
 
-    if (subtrahend < minuend) // 작은값 - 큰값
-    {
-        inf_int result = minuend.simple_subtract(subtrahend);
-        result.thesign = false;
-        return result;
-    }
+    inf_int subtrahend = *this;
+    subtrahend.thesign = true;
+    inf_int minuend = other;
+    minuend.thesign = true;
 
     int s_digit, m_digit, temp;
     std::string digits;
-    bool is_carry = false; // carry 초기화
+    bool is_carry = false;
+
     for (size_t i = 0; i < subtrahend.digits.length(); i++)
     {
         s_digit = subtrahend.digits.at(i) - '0';
@@ -272,21 +247,17 @@ inf_int inf_int::simple_subtract(const inf_int& other) const
 
         temp = s_digit - m_digit;
         is_carry = temp < 0;
-        if (is_carry)
-        {
-            temp += 10;
-        }
+        if (is_carry) temp += 10;
 
         digits.push_back(temp + '0');
-    }
-
-    // 결과 앞의 불필요한 0 제거
-    while (digits.length() > 1 && digits.back() == '0') {
-        digits.pop_back();
-    }
-
+    } 
+	while (digits.length() > 1 && digits.back() == '0') {
+		digits.pop_back();
+	}
     std::reverse(digits.begin(), digits.end());
-    return inf_int(digits);
+    inf_int result(digits);
+    result.thesign = !is_carry;
+    return result;
 }
 
 inf_int operator*(const inf_int& a, const inf_int& b)
@@ -335,13 +306,14 @@ inf_int operator*(const inf_int& a, const inf_int& b)
 inf_int operator/(const inf_int& a, const inf_int& b)
 {
 	const inf_int zero;
-	inf_int reminder;
-	inf_int divisor = b.digits;
-
+	inf_int reminder = a;
+	reminder.thesign = true;
+	inf_int divisor = b;
+	divisor.thesign = true;
 	assert(divisor!=zero); //0으로 나누는 경우 에러
 	
-	if (a==zero) return zero; // 0을 나누는 경우 0을 반환
-	if (inf_int(a.digits) < inf_int(b.digits)) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
+	if (a==zero) return zero; // 0/b 인경우 0 반환
+	if (reminder < divisor) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
 
 	reminder.digits = "";
 	string quotient_digits;
