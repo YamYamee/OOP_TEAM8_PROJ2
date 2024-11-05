@@ -51,16 +51,21 @@ inf_int::inf_int(const string str)
 		start_index = str.length()-1; //문자열이 모두 0일 때
 
 	digits = "";
-	for (int i = str.length()-1; i>=start_index; i--) //역순으로 저장
+
+	for (int i = str.length()-1; i >= start_index; i--) //역순으로 저장
 	{
-		assert(!isdigit(str.at(i)));
+
+		if (i < 0) break;
+
+		assert(isdigit(str.at(i)));
 		digits.push_back(str.at(i));
 	}
 }
 
 inf_int::inf_int(const inf_int& a): digits(a.digits), thesign(a.thesign) {}
 
-inf_int::~inf_int() {}
+inf_int::~inf_int() {
+}
 
 inf_int& inf_int::operator=(const inf_int& a)
 {
@@ -71,10 +76,7 @@ inf_int& inf_int::operator=(const inf_int& a)
 
 bool operator==(const inf_int& a, const inf_int& b)
 {
-	// we assume 0 is always positive.
-	if ((strcmp(a.digits, b.digits) == 0) && a.thesign == b.thesign)	// ��ȣ�� ����, ������ ��ġ�ؾ���.
-		return true;
-	return false;
+	return a.thesign == b.thesign && a.digits == b.digits;
 }
 
 bool operator!=(const inf_int& a, const inf_int& b)
@@ -84,11 +86,31 @@ bool operator!=(const inf_int& a, const inf_int& b)
 
 bool operator>(const inf_int& a, const inf_int& b)
 {
-	// to be filled
-	// ���밪 ��
-	// �� �� ����� ��� ���� ���� ���� �״�� return
-	// �� �� ������ ��� ���� ���� ���� �����Ͽ� return
-	// ��ȣ�� �ٸ� ���, a�� ����� ��� b�� ����, a�� ������ ��� b�� ����̱⿡ a�� ��ȣ�������� ��ȯ�ϸ� ��
+	// 부호가 같은 경우
+	if (a.thesign == b.thesign) {
+		// 자릿수가 같은 경우, 각 자리의 숫자를 비교
+		if (a.digits.length() == b.digits.length()) {
+			for (int i = a.digits.length() - 1; i >= 0; i--) { // 역순으로 비교
+				if (a.digits[i] > b.digits[i]) return a.thesign;
+				if (a.digits[i] < b.digits[i]) return !a.thesign;
+			}
+			return false; // 모든 자리가 같으면 두 수가 같음
+		}
+		else {
+			// 자릿수가 다르면 양수일 경우 자릿수가 큰 쪽이 더 큼
+			if (a.thesign) {
+				return a.digits.length() > b.digits.length();
+			}
+			// 음수일 경우 자릿수가 작은 쪽이 더 큼
+			else {
+				return a.digits.length() < b.digits.length();
+			}
+		}
+	}
+	else {
+		// 부호가 다르면 양수가 더 큼
+		return a.thesign;
+	}
 }
 
 bool operator<(const inf_int& a, const inf_int& b)
@@ -103,43 +125,71 @@ bool operator<(const inf_int& a, const inf_int& b)
 
 inf_int operator+(const inf_int& a, const inf_int& b)
 {
+
+	if (a.thesign != b.thesign) {
+		return a - b;
+	}
+
 	inf_int c;
-	unsigned int i;
+	unsigned int length;
+	char carry = '0';
 
-	if (a.thesign == b.thesign) {	// ������ ��ȣ�� ���� ��� + �����ڷ� ����
-		for (i = 0; i < a.length; i++) {
-			c.Add(a.digits[i], i + 1);
+	// 최대 자리수만큼 초기화
+	length = max(a.digits.length(), b.digits.length());
+	c.digits.resize(length); // 필요한 길이만큼 문자열 배열 초기화
+	c.thesign = a.thesign;
+
+	for (int i = 0; i < length; i++) {
+		// 각 자리의 숫자를 추출
+		char a_digit = (i < a.digits.length()) ? a.digits[i] : '0';
+		char b_digit = (i < b.digits.length()) ? b.digits[i] : '0';
+
+		// 두 자릿수와 carry를 더해 sum을 계산
+		char sum = (a_digit - '0') + (b_digit - '0') + (carry - '0') + '0';
+
+		// 10 이상의 경우, carry 처리
+		if (sum > '9') {
+			sum -= 10;
+			carry = '1';
 		}
-		for (i = 0; i < b.length; i++) {
-			c.Add(b.digits[i], i + 1);
+		else {
+			carry = '0';
 		}
 
-		c.thesign = a.thesign;
-
-		return c;
+		// 결과 자리수를 c.digits에 저장
+		c.digits[i] = sum;
 	}
-	else {	// ������ ��ȣ�� �ٸ� ��� - �����ڷ� ����
-		c = b;
-		c.thesign = a.thesign;
 
-		return a - c;
+	// 마지막 캐리가 남아 있으면 추가
+	if (carry == '1') {
+		c.digits.push_back('1');
 	}
+
+	return c;
 }
 
 inf_int operator-(const inf_int& a, const inf_int& b)
 {
-    inf_int result;
-    if (a < b)
-    {
-        result = b.karatsuba_subtract(a);
-        result.thesign = false;
-    }
-    else
-    {
-        result = a.karatsuba_subtract(b);
-        result.thesign = true;
-    }
-    return result;
+	if (a==b) return inf_int(0); // 두 수가 같으면 0 반환
+
+	inf_int subtrahend = a, minuend = b;
+	subtrahend.thesign = true; minuend.thesign = true;
+
+	if (a.thesign != b.thesign) // 부호가 다르면 더하기
+	{
+		inf_int result = subtrahend + minuend;
+		result.thesign = a.thesign;
+		return result;
+	}
+	
+	if (subtrahend < minuend) // 작은값에서 큰값을 빼는 경우
+	{
+		inf_int result = minuend.karatsuba_subtract(subtrahend);
+		result.thesign = !a.thesign;
+		return result;
+	}
+
+    return subtrahend.karatsuba_subtract(minuend);
 }
 
 inf_int inf_int::karatsuba_subtract(const inf_int& other) const
@@ -147,46 +197,47 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     if (digits.length() <= 1 || other.digits.length() <= 1) return simple_subtract(other);
 
     int max_len = std::max(digits.length(), other.digits.length());
-    std::string subtrahend_digits = this->digits; // 빼질 값
-    subtrahend_digits.insert(0, max_len - subtrahend_digits.length(), '0'); // 자릿수 맞추기
-    std::string minuend_digits = other.digits; // 뺄 값
-    minuend_digits.insert(0, max_len - minuend_digits.length(), '0'); // 자릿수 맞추기
+    std::string subtrahend_digits = this->digits;
+    subtrahend_digits.insert(subtrahend_digits.end(), max_len - subtrahend_digits.length(), '0'); // 앞에 0 추가
+    std::string minuend_digits = other.digits;
+    minuend_digits.insert(minuend_digits.end(), max_len - minuend_digits.length(), '0'); // 앞에 0 추가
 
     int split_pos = max_len / 2;
-    inf_int s_left(subtrahend_digits.substr(0, split_pos));
-    inf_int s_right(subtrahend_digits.substr(split_pos));
-    inf_int m_left(minuend_digits.substr(0, split_pos));
-    inf_int m_right(minuend_digits.substr(split_pos));
+    inf_int s_left, s_right, m_left, m_right;
+    s_left.digits = subtrahend_digits.substr(0, split_pos);
+    s_right.digits = subtrahend_digits.substr(split_pos);
+    m_left.digits = minuend_digits.substr(0, split_pos);
+    m_right.digits = minuend_digits.substr(split_pos);
 
     inf_int left_result = s_left.karatsuba_subtract(m_left);
+	if (!left_result.thesign)
+	{
+		s_right = s_right.karatsuba_subtract(inf_int(1)); // 부호 처리 문제
+		left_result.thesign = true;
+	}
     inf_int right_result = s_right.karatsuba_subtract(m_right);
 
-    if (!right_result.thesign) // carry 발생시
-    {
-        left_result = left_result.karatsuba_subtract(inf_int(1));
-        right_result.thesign = true;
-    }
-
-    inf_int result;
-    result.digits = left_result.digits + std::string(max_len - split_pos, '0') + right_result.digits;
+	int left_padding = m_left.digits.length()-left_result.digits.length();
+	string result_digits = left_result.digits + string(left_padding, '0') + right_result.digits;
+	reverse(result_digits.begin(), result_digits.end());
+    inf_int result(result_digits);
+	result.thesign = s_right.thesign ? right_result.thesign: false; // 부호처리 
     return result;
 }
 
 inf_int inf_int::simple_subtract(const inf_int& other) const
 {
-    inf_int subtrahend = digits; // 빼질 값
-    inf_int minuend = other.digits; // 뺄 값
+	if (*this == other) return inf_int(0); // 동일한 숫자이면 0반환
 
-    if (subtrahend < minuend) // 작은값 - 큰값
-    {
-        inf_int result = minuend.simple_subtract(subtrahend);
-        result.thesign = false;
-        return result;
-    }
+    inf_int subtrahend = *this;
+    subtrahend.thesign = true;
+    inf_int minuend = other;
+    minuend.thesign = true;
 
     int s_digit, m_digit, temp;
     std::string digits;
-    bool is_carry = false; // carry 초기화
+    bool is_carry = false;
+
     for (size_t i = 0; i < subtrahend.digits.length(); i++)
     {
         s_digit = subtrahend.digits.at(i) - '0';
@@ -196,38 +247,73 @@ inf_int inf_int::simple_subtract(const inf_int& other) const
 
         temp = s_digit - m_digit;
         is_carry = temp < 0;
-        if (is_carry)
-        {
-            temp += 10;
-        }
+        if (is_carry) temp += 10;
 
         digits.push_back(temp + '0');
-    }
-
-    // 결과 앞의 불필요한 0 제거
-    while (digits.length() > 1 && digits.back() == '0') {
-        digits.pop_back();
-    }
-
+    } 
+	while (digits.length() > 1 && digits.back() == '0') {
+		digits.pop_back();
+	}
     std::reverse(digits.begin(), digits.end());
-    return inf_int(digits);
+    inf_int result(digits);
+    result.thesign = !is_carry;
+    return result;
 }
 
 inf_int operator*(const inf_int& a, const inf_int& b)
 {
-	// to be filled
+	unsigned char length = a.digits.length() + b.digits.length();
+	inf_int c;
+	c.digits.resize(length, '0'); // 결과의 자리수를 위한 배열 초기화
+
+	// 두 숫자의 곱셈
+	for (int i = 0; i < a.digits.length(); i++) {
+		char multiplier = a.digits[i] - '0'; // char to int
+		char carry = 0;
+
+		for (int j = 0; j < b.digits.length(); j++) {
+			char digit = (b.digits[j] - '0') * multiplier + carry + (c.digits[i + j] - '0');
+
+			// 자리수의 누적
+			if (digit >= 10) {
+				carry = digit / 10; // carry 계산
+				digit = digit % 10;  // 현재 자리수
+			}
+			else {
+				carry = 0; // carry 초기화
+			}
+
+			c.digits[i + j] = digit + '0'; // 결과에 현재 자리수 저장
+		}
+
+		// 남아있는 carry를 다음 자리수에 추가
+		if (carry != 0) {
+			c.digits[i + b.digits.length()] += carry; // 결과의 다음 자리수에 추가
+		}
+	}
+
+	// 부호 결정
+	c.thesign = (a.thesign == b.thesign) ? true : false; // 두 수의 부호가 다르면 결과는 음수
+
+	// 결과에서 불필요한 앞자리 0 제거
+	while (c.digits.length() > 1 && c.digits.back() == '0') {
+		c.digits.pop_back();
+	}
+
+	return c;
 }
 
 inf_int operator/(const inf_int& a, const inf_int& b)
 {
 	const inf_int zero;
-	inf_int reminder;
-	inf_int divisor = b.digits;
-
+	inf_int reminder = a;
+	reminder.thesign = true;
+	inf_int divisor = b;
+	divisor.thesign = true;
 	assert(divisor!=zero); //0으로 나누는 경우 에러
 	
-	if (a==zero) return zero; // 0을 나누는 경우 0을 반환
-	if (inf_int(a.digits) < inf_int(b.digits)) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
+	if (a==zero) return zero; // 0/b 인경우 0 반환
+	if (reminder < divisor) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
 
 	reminder.digits = "";
 	string quotient_digits;
@@ -263,14 +349,16 @@ ostream& operator<<(ostream& out, const inf_int& a)
 	if (a.thesign == false) {
 		out << '-';
 	}
-	for (i = a.length - 1; i >= 0; i--) {
+	for (i = a.digits.length() - 1; i >= 0; i--) {
 		out << a.digits[i];
 	}
+
 	return out;
 }
 
 void inf_int::Add(const char num, const unsigned int index)	// a�� index �ڸ����� n�� ���Ѵ�. 0<=n<=9, ex) a�� 391�϶�, Add(a, 2, 2)�� ����� 411
 {
+	/*
 	if (this->length < index) {
 		this->digits = (char*)realloc(this->digits, index + 1);
 
@@ -294,5 +382,5 @@ void inf_int::Add(const char num, const unsigned int index)	// a�� index �
 	if (this->digits[index - 1] > '9') {	// �ڸ��ø��� �߻��� ���
 		this->digits[index - 1] -= 10;	// ���� �ڸ������� (�ƽ�Ű��) 10�� ����
 		Add('1', index + 1);			// ���ڸ��� 1�� ���Ѵ�
-	}
+	}*/
 }
