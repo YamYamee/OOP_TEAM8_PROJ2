@@ -212,14 +212,16 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     inf_int left_result = s_left.karatsuba_subtract(m_left);
 	if (!left_result.thesign)
 	{
-		s_right = s_right.karatsuba_subtract(inf_int(1));
+		s_right = s_right.karatsuba_subtract(inf_int(1)); // 부호 처리 문제
 		left_result.thesign = true;
 	}
     inf_int right_result = s_right.karatsuba_subtract(m_right);
-	string result_digits = left_result.digits + right_result.digits + std::string(max_len - right_result.digits.length(), '0');
+
+	int left_padding = m_left.digits.length()-left_result.digits.length();
+	string result_digits = left_result.digits + string(left_padding, '0') + right_result.digits;
 	reverse(result_digits.begin(), result_digits.end());
     inf_int result(result_digits);
-	result.thesign = right_result.thesign; // 부호처리 
+	result.thesign = s_right.thesign ? right_result.thesign: false; // 부호처리 
     return result;
 }
 
@@ -304,13 +306,14 @@ inf_int operator*(const inf_int& a, const inf_int& b)
 inf_int operator/(const inf_int& a, const inf_int& b)
 {
 	const inf_int zero;
-	inf_int reminder;
-	inf_int divisor = b.digits;
-
+	inf_int reminder = a;
+	reminder.thesign = true;
+	inf_int divisor = b;
+	divisor.thesign = true;
 	assert(divisor!=zero); //0으로 나누는 경우 에러
 	
-	if (a==zero) return zero; // 0을 나누는 경우 0을 반환
-	if (inf_int(a.digits) < inf_int(b.digits)) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
+	if (a==zero) return zero; // 0/b 인경우 0 반환
+	if (reminder < divisor) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
 
 	reminder.digits = "";
 	string quotient_digits;
