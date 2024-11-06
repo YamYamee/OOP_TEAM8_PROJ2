@@ -218,7 +218,9 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     inf_int right_result = s_right.karatsuba_subtract(m_right);
 
 	int left_padding = m_left.digits.length()-left_result.digits.length();
-	string result_digits = left_result.digits + string(left_padding, '0') + right_result.digits;
+	string result_digits = left_result.digits;
+	if (left_padding > 0) result_digits += string(left_padding, '0');
+	result_digits += right_result.digits;
 	reverse(result_digits.begin(), result_digits.end());
     inf_int result(result_digits);
 	result.thesign = s_right.thesign ? right_result.thesign: false; // 부호처리 
