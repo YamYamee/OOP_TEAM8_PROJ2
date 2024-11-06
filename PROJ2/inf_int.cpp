@@ -203,16 +203,17 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     if (digits.length() <= 1 || other.digits.length() <= 1) return simple_subtract(other);
 
     int max_len = std::max(digits.length(), other.digits.length());
-    std::string subtrahend_digits = this->digits; // 빼질 값
-    subtrahend_digits.insert(0, max_len - subtrahend_digits.length(), '0'); // 자릿수 맞추기
-    std::string minuend_digits = other.digits; // 뺄 값
-    minuend_digits.insert(0, max_len - minuend_digits.length(), '0'); // 자릿수 맞추기
+    std::string subtrahend_digits = this->digits;
+    subtrahend_digits.insert(subtrahend_digits.end(), max_len - subtrahend_digits.length(), '0'); // 앞에 0 추가
+    std::string minuend_digits = other.digits;
+    minuend_digits.insert(minuend_digits.end(), max_len - minuend_digits.length(), '0'); // 앞에 0 추가
 
     int split_pos = max_len / 2;
-    inf_int s_left(subtrahend_digits.substr(0, split_pos));
-    inf_int s_right(subtrahend_digits.substr(split_pos));
-    inf_int m_left(minuend_digits.substr(0, split_pos));
-    inf_int m_right(minuend_digits.substr(split_pos));
+    inf_int s_left, s_right, m_left, m_right;
+    s_left.digits = subtrahend_digits.substr(0, split_pos);
+    s_right.digits = subtrahend_digits.substr(split_pos);
+    m_left.digits = minuend_digits.substr(0, split_pos);
+    m_right.digits = minuend_digits.substr(split_pos);
 
     inf_int left_result = s_left.karatsuba_subtract(m_left);
 	if (!left_result.thesign)
@@ -266,6 +267,7 @@ inf_int inf_int::simple_subtract(const inf_int& other) const
     result.thesign = !is_carry;
     return result;
 }
+
 
 inf_int operator*(const inf_int& a, const inf_int& b)
 {
