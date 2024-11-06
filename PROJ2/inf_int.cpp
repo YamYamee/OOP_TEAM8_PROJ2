@@ -3,11 +3,6 @@
 #include <cassert>
 #include <cctype>
 #include <deque>
-/*
-Originally written by
-��ǻ�Ͱ��к�
-������
-*/
 
 // 0으로 초기화
 inf_int::inf_int(): digits("0"), thesign(true) {};
@@ -76,7 +71,19 @@ inf_int& inf_int::operator=(const inf_int& a)
 
 bool operator==(const inf_int& a, const inf_int& b)
 {
-	return a.thesign == b.thesign && a.digits == b.digits;
+	// 부호와 자릿수가 같지 않으면 바로 false를 반환
+	if (a.thesign != b.thesign || a.digits.length() != b.digits.length()) {
+		return false;
+	}
+
+	// 모든 자리수가 동일한지 확인
+	for (int i = 0; i < a.digits.length(); i++) {
+		if (a.digits[i] != b.digits[i]) {
+			return false;
+		}
+	}
+
+	return true; // 모든 조건을 만족하면 true 반환
 }
 
 bool operator!=(const inf_int& a, const inf_int& b)
@@ -125,7 +132,6 @@ bool operator<(const inf_int& a, const inf_int& b)
 
 inf_int operator+(const inf_int& a, const inf_int& b)
 {
-
 	if (a.thesign != b.thesign) {
 		return a - b;
 	}
@@ -197,17 +203,16 @@ inf_int inf_int::karatsuba_subtract(const inf_int& other) const
     if (digits.length() <= 1 || other.digits.length() <= 1) return simple_subtract(other);
 
     int max_len = std::max(digits.length(), other.digits.length());
-    std::string subtrahend_digits = this->digits;
-    subtrahend_digits.insert(subtrahend_digits.end(), max_len - subtrahend_digits.length(), '0'); // 앞에 0 추가
-    std::string minuend_digits = other.digits;
-    minuend_digits.insert(minuend_digits.end(), max_len - minuend_digits.length(), '0'); // 앞에 0 추가
+    std::string subtrahend_digits = this->digits; // 빼질 값
+    subtrahend_digits.insert(0, max_len - subtrahend_digits.length(), '0'); // 자릿수 맞추기
+    std::string minuend_digits = other.digits; // 뺄 값
+    minuend_digits.insert(0, max_len - minuend_digits.length(), '0'); // 자릿수 맞추기
 
     int split_pos = max_len / 2;
-    inf_int s_left, s_right, m_left, m_right;
-    s_left.digits = subtrahend_digits.substr(0, split_pos);
-    s_right.digits = subtrahend_digits.substr(split_pos);
-    m_left.digits = minuend_digits.substr(0, split_pos);
-    m_right.digits = minuend_digits.substr(split_pos);
+    inf_int s_left(subtrahend_digits.substr(0, split_pos));
+    inf_int s_right(subtrahend_digits.substr(split_pos));
+    inf_int m_left(minuend_digits.substr(0, split_pos));
+    inf_int m_right(minuend_digits.substr(split_pos));
 
     inf_int left_result = s_left.karatsuba_subtract(m_left);
 	if (!left_result.thesign)
@@ -264,17 +269,27 @@ inf_int inf_int::simple_subtract(const inf_int& other) const
 
 inf_int operator*(const inf_int& a, const inf_int& b)
 {
-	unsigned char length = a.digits.length() + b.digits.length();
+	if (a.digits.length() < 32 && b.digits.length() < 32) {
+		return a.simple_multiply(b);
+	}
+	else {
+		return a.karatsuba_multiply(b);
+	}
+}
+
+inf_int inf_int::simple_multiply(const inf_int& other) const {
+
+	unsigned char length = digits.length() + other.digits.length();
 	inf_int c;
 	c.digits.resize(length, '0'); // 결과의 자리수를 위한 배열 초기화
 
 	// 두 숫자의 곱셈
-	for (int i = 0; i < a.digits.length(); i++) {
-		char multiplier = a.digits[i] - '0'; // char to int
+	for (int i = 0; i < digits.length(); i++) {
+		char multiplier = digits[i] - '0'; // char to int
 		char carry = 0;
 
-		for (int j = 0; j < b.digits.length(); j++) {
-			char digit = (b.digits[j] - '0') * multiplier + carry + (c.digits[i + j] - '0');
+		for (int j = 0; j < other.digits.length(); j++) {
+			char digit = (other.digits[j] - '0') * multiplier + carry + (c.digits[i + j] - '0');
 
 			// 자리수의 누적
 			if (digit >= 10) {
@@ -290,12 +305,12 @@ inf_int operator*(const inf_int& a, const inf_int& b)
 
 		// 남아있는 carry를 다음 자리수에 추가
 		if (carry != 0) {
-			c.digits[i + b.digits.length()] += carry; // 결과의 다음 자리수에 추가
+			c.digits[i + other.digits.length()] += carry; // 결과의 다음 자리수에 추가
 		}
 	}
 
 	// 부호 결정
-	c.thesign = (a.thesign == b.thesign) ? true : false; // 두 수의 부호가 다르면 결과는 음수
+	c.thesign = (thesign == other.thesign) ? true : false; // 두 수의 부호가 다르면 결과는 음수
 
 	// 결과에서 불필요한 앞자리 0 제거
 	while (c.digits.length() > 1 && c.digits.back() == '0') {
@@ -303,6 +318,30 @@ inf_int operator*(const inf_int& a, const inf_int& b)
 	}
 
 	return c;
+}
+
+inf_int inf_int::karatsuba_multiply(const inf_int& other) const {
+
+	if (digits.length() == 0 || other.digits.length() == 0) return inf_int("0");
+	if (digits.length() == 1 || other.digits.length() == 1) return simple_multiply(other);
+
+	int m = max(digits.length(), other.digits.length());
+	int half = m / 2;
+
+	inf_int a0(digits.substr(0, half));
+	inf_int a1(digits.substr(half));
+	inf_int b0(other.digits.substr(0, half));
+	inf_int b1(other.digits.substr(half));
+
+	inf_int z0 = a0.karatsuba_multiply(b0); // a0 * b0
+	inf_int z1 = (a0 + a1).karatsuba_multiply(b0 + b1); // (a0 + a1) * (b0 + b1)
+	inf_int z2 = a1.karatsuba_multiply(b1); // a1 * b1
+
+	inf_int result = z0 + ((z1 - z0 - z2).digits.append(half, '0') + (z2.digits.append(2 * half, 0)));
+
+	result.thesign = (thesign == other.thesign); // 부호 결정
+
+	return result;
 }
 
 inf_int operator/(const inf_int& a, const inf_int& b)
@@ -356,33 +395,4 @@ ostream& operator<<(ostream& out, const inf_int& a)
 	}
 
 	return out;
-}
-
-void inf_int::Add(const char num, const unsigned int index)	// a�� index �ڸ����� n�� ���Ѵ�. 0<=n<=9, ex) a�� 391�϶�, Add(a, 2, 2)�� ����� 411
-{
-	/*
-	if (this->length < index) {
-		this->digits = (char*)realloc(this->digits, index + 1);
-
-		if (this->digits == NULL) {		// �Ҵ� ���� ����ó��
-			cout << "Memory reallocation failed, the program will terminate." << endl;
-
-			exit(0);
-		}
-
-		this->length = index;					// ���� ����
-		this->digits[this->length] = '\0';	// �ι��� ����
-	}
-
-	if (this->digits[index - 1] < '0') {	// ���� ���� '0'���� ���� �ƽ�Ű���� ��� 0���� ä��. �������� �ʾҴ� ���ο� �ڸ����� ��� �߻�
-		this->digits[index - 1] = '0';
-	}
-
-	this->digits[index - 1] += num - '0';	// �� ����
-
-
-	if (this->digits[index - 1] > '9') {	// �ڸ��ø��� �߻��� ���
-		this->digits[index - 1] -= 10;	// ���� �ڸ������� (�ƽ�Ű��) 10�� ����
-		Add('1', index + 1);			// ���ڸ��� 1�� ���Ѵ�
-	}*/
 }
