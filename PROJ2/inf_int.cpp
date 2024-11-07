@@ -349,20 +349,61 @@ inf_int inf_int::karatsuba_multiply(const inf_int& other) const {
 inf_int operator/(const inf_int& a, const inf_int& b)
 {
 	const inf_int zero;
-	inf_int reminder = a;
-	reminder.thesign = true;
+	inf_int dividened = a;
+	dividened.thesign = true;
 	inf_int divisor = b;
 	divisor.thesign = true;
 	assert(divisor!=zero); //0으로 나누는 경우 에러
 	
-	if (a==zero) return zero; // 0/b 인경우 0 반환
+	if (a==zero || dividened < divisor) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
+	if (a.digits.length() <= 1 || b.digits.length() <= 1) return a.simple_divide(b);
+	
+	inf_int left;
+	inf_int right = dividened;
+	inf_int result;
+
+	while (left < right || left == right)
+	{
+		inf_int mid = (left+right)/2;
+		inf_int temp = mid*divisor;
+		if (temp == dividened)
+		{
+			result = mid;
+			break;
+		}
+		if (temp < dividened)
+		{
+			result = mid;
+			left = mid + 1;
+		}
+		else {
+			right = mid - 1;
+		}
+	}
+	
+	result.thesign = a.thesign==b.thesign;
+	return result;
+}
+
+inf_int inf_int::simple_divide(const inf_int& other) const
+{
+	const inf_int zero;
+	inf_int reminder = *this;
+	reminder.thesign = true;
+	inf_int divisor = other;
+	divisor.thesign = true;
+	assert(divisor!=zero); //0으로 나누는 경우 에러
+	
+	if (*this==zero) return zero; // 0/b 인경우 0 반환
 	if (reminder < divisor) return zero; // 절댓값 비교시, 나누는값이 더 클 경우 몫은 0이므로 몫 반환
 
 	reminder.digits = "";
 	string quotient_digits;
-	for (int i = a.digits.length()-1; i>=0; i--)
+	for (int i = digits.length()-1; i>=0; i--)
 	{
-		reminder.digits.insert(reminder.digits.begin(), a.digits.at(i)); // 나머지에 추가
+		reminder.digits.insert(reminder.digits.begin(), digits.at(i)); // 나머지에 추가 저장싱 00이되는 경우 오류
+		while (reminder.digits.length() > 1 && reminder.digits.back() == '0')
+			reminder.digits.pop_back();
 		if (reminder<divisor) // 나누는 값이 나눠질 값보다 크면, 몫을 0으로 설정
 		{
 			quotient_digits.push_back('0');
@@ -380,10 +421,9 @@ inf_int operator/(const inf_int& a, const inf_int& b)
 	}
 
 	inf_int quotient = quotient_digits;
-	quotient.thesign = a.thesign==b.thesign;
+	quotient.thesign = thesign==other.thesign;
 	return quotient;
 }
-
 
 ostream& operator<<(ostream& out, const inf_int& a)
 {
