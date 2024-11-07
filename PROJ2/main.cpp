@@ -56,9 +56,9 @@ void test_operator(inf_int a1, inf_int a2, inf_int t, OperatorType type)
 			break;
 	}
 	if (is_success)
-		cout<<": ✅ Success"<<endl;
+		cout<<": [O] Success"<<endl;
 	else {
-		cout<<": ❌ Fail ";
+		cout<<": [X] Fail ";
 		cout<<"(Result: "<<result;
 		cout<<")"<<endl;
 	}
