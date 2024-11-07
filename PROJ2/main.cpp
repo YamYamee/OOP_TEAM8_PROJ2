@@ -56,9 +56,9 @@ void test_operator(inf_int a1, inf_int a2, inf_int t, OperatorType type)
 			break;
 	}
 	if (is_success)
-		cout<<": ✅ Success"<<endl;
+		cout<<": [O] Success"<<endl;
 	else {
-		cout<<": ❌ Fail ";
+		cout<<": [X] Fail ";
 		cout<<"(Result: "<<result;
 		cout<<")"<<endl;
 	}
@@ -104,6 +104,7 @@ int main()
 	test_operator(inf_int("12132931302198"), inf_int("224662462462465"), inf_int("-212529531160267"), SUBTRACT);
 	test_operator(inf_int("12132931302198"), inf_int("12345"), inf_int("149781036925634310"), MULTIPLY);
 	test_operator(inf_int("12132931302198"), inf_int("-12345"), inf_int("-149781036925634310"), MULTIPLY);
+	test_operator(inf_int("89120313923121"), inf_int("2"), inf_int("44560156961560"), DIVIDE);
 	test_operator(inf_int("12132931302198"), inf_int("12345"), inf_int("982821490"), DIVIDE);
 	
 	return 0;

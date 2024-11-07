@@ -49,6 +49,8 @@ private:
     inf_int simple_multiply(const inf_int&) const;
 
     inf_int karatsuba_multiply(const inf_int&) const;
+
+    inf_int simple_divide(const inf_int&) const;
 };
 
 #endif
