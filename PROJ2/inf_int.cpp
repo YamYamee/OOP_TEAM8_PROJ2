@@ -306,6 +306,21 @@ inf_int operator*(const inf_int& a, const inf_int& b)
 	}
 }
 
+inf_int inf_int::loop_multiply(const inf_int& ori, const inf_int& other) const {
+
+	inf_int result(0);
+	inf_int copy = other;
+	inf_int zero(0);
+	inf_int one(1);
+
+	while (copy > zero) {
+		result = result + ori;
+		copy = copy - one;
+	}
+
+	return result;
+}
+
 inf_int inf_int::simple_multiply(const inf_int& other) const {
 
 	unsigned char length = digits.length() + other.digits.length();
