@@ -20,6 +20,7 @@ public:
     inf_int(); // assign 0 as a default value
     inf_int(int);
     inf_int(const string);
+    inf_int(const string, bool); // 곱셈을 위한 특별한 생성자
     inf_int(const inf_int&);
     ~inf_int(); // destructor
 

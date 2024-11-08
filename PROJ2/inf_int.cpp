@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cctype>
 #include <deque>
+#include <string>
 
 // 0으로 초기화
 inf_int::inf_int(): digits("0"), thesign(true) {};
@@ -48,6 +49,32 @@ inf_int::inf_int(const string str)
 	digits = "";
 
 	for (int i = str.length()-1; i >= start_index; i--) //역순으로 저장
+	{
+
+		if (i < 0) break;
+
+		assert(isdigit(str.at(i)));
+		digits.push_back(str.at(i));
+	}
+}
+
+inf_int::inf_int(const string str, bool condition)
+{
+	unsigned int start_index = 1; // 숫자 시작 인덱스
+
+	// 부호 판별, 만약 첫번째 인덱스가 부호이거나 숫자가 아니면 에러를 발생시킵니다.
+	if (str.at(0) == '+') thesign = true;
+	else if (str.at(0) == '-') thesign = false;
+	else if (isdigit(str.at(0)))
+	{
+		start_index = 0;
+		thesign = true;
+	}
+	else assert(true);
+
+	digits = "";
+
+	for (int i = start_index; i < str.length(); i++)
 	{
 
 		if (i < 0) break;
@@ -324,24 +351,33 @@ inf_int inf_int::simple_multiply(const inf_int& other) const {
 
 inf_int inf_int::karatsuba_multiply(const inf_int& other) const {
 
-	if (digits.length() == 0 || other.digits.length() == 0) return inf_int("0");
+	// 기본 케이스: 길이가 1이면 simple_multiply 사용
 	if (digits.length() == 1 || other.digits.length() == 1) return simple_multiply(other);
 
-	int m = max(digits.length(), other.digits.length());
-	int half = m / 2;
+	// 반으로 나눌 위치 계산
+	int half = min(digits.length(), other.digits.length()) / 2;
 
-	inf_int a0(digits.substr(0, half));
-	inf_int a1(digits.substr(half));
-	inf_int b0(other.digits.substr(0, half));
-	inf_int b1(other.digits.substr(half));
+	// 역순으로 저장된 숫자에서 반으로 분할
+	inf_int a0(digits.substr(0, half), true);
+	inf_int a1(digits.substr(half), true);
+	inf_int b0(other.digits.substr(0, half), true);
+	inf_int b1(other.digits.substr(half), true);
 
-	inf_int z0 = a0.karatsuba_multiply(b0); // a0 * b0
-	inf_int z1 = (a0 + a1).karatsuba_multiply(b0 + b1); // (a0 + a1) * (b0 + b1)
-	inf_int z2 = a1.karatsuba_multiply(b1); // a1 * b1
+	// Karatsuba 알고리즘의 세 부분 계산
+	inf_int z0 = a0.karatsuba_multiply(b0); // z0 = a0 * b0
+	inf_int z1 = (a0 + a1).karatsuba_multiply(b0 + b1); // z1 = (a0 + a1) * (b0 + b1)
+	inf_int z2 = a1.karatsuba_multiply(b1); // z2 = a1 * b1
 
-	inf_int result = z0 + ((z1 - z0 - z2).digits.append(half, '0') + (z2.digits.append(2 * half, 0)));
+	// z1 - z0 - z2 계산
+	inf_int mid_result = z1 - z0 - z2;
 
-	result.thesign = (thesign == other.thesign); // 부호 결정
+	// 자리 이동을 반영하여 최종 결과 생성
+	for (int i = 0; i < 2 * half; i++) z2.digits.insert(z2.digits.begin(), '0'); // z2에 2*half 자리 이동
+	for (int i = 0; i < half; i++) mid_result.digits.insert(mid_result.digits.begin(), '0'); // 중간 결과에 half 자리 이동
+
+	// 최종 결과 합산
+	inf_int result = z0 + mid_result + z2;
+	result.thesign = (thesign == other.thesign);
 
 	return result;
 }
